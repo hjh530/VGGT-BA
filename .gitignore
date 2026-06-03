@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+
+# Output (generated results)
+output/
+
+# Weights (large model files)
+weights/
+
+# Input data (large images + npz)
+input/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Conda
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Third-party (nested git repo)
+Hierarchical-Localization/
+
+# Claude
+CLAUDE.md

@@ -7,8 +7,6 @@ dist/
 # Output (generated results)
 output/
 
-# Weights (large model files)
-weights/
 
 # Input data (large images + npz)
 input/

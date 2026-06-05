@@ -71,6 +71,27 @@ output/<scene_name>/sparse/0/
 └── traj_all.png         # 三合一对比图
 ```
 
+## 匹配对生成策略
+
+`utils/pairs.py` 提供两种配对模式，自动检测场景类型：
+
+### 自动检测 (`mode='auto'`，默认)
+
+| 场景类型 | 判断条件 | 策略 |
+|---------|---------|------|
+| **纯空中场景** (如 picture) | 无 `Terr_` 前缀图像 | **穷举法**：N×(N-1)/2 全配对 |
+| **空地混合场景** (如 test) | 存在 `Terr_` 前缀图像 | **规则法**：距离最近邻 + 序列窗口 |
+
+### 规则法详情
+
+| 配对类型 | 规则 |
+|---------|------|
+| Air-Air | 每个 Air 图像匹配最近的 15 个 Air 邻居 |
+| Ground-Ground | 滑动窗口 20 帧 + 回环匹配 |
+| Air-Ground | 每个 Air 图像匹配最近的 5 个 Ground 图像 |
+
+也可以手动指定模式：修改脚本中 `generate_pairs(img_names, ext_all, mode='exhaustive')` 或 `mode='rules'`。
+
 ## 三个 BA 脚本对比
 
 | 脚本 | 优化方法 | 特点 |

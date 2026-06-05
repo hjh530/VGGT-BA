@@ -153,27 +153,8 @@ def main():
 
     img_orient = [PILImage.open(p).getexif().get(0x0112, 1) for p in image_paths]
 
-    is_ground = [n.startswith('Terr_') for n in img_names]
-    air_idx = [i for i in range(N) if not is_ground[i]]
-    gnd_idx = [i for i in range(N) if is_ground[i]]
-    centers = -np.einsum('aij,aj->ai', ext_all[:,:3,:3].transpose(0,2,1), ext_all[:,:3,3])
-
-    pairs_to_match = []
-    for i in range(N):
-        if not is_ground[i]: continue
-        for j in range(i+1, min(i+21, N)):
-            if is_ground[j]: pairs_to_match.append((i, j))
-    for ai in air_idx:
-        dists = np.linalg.norm(centers[air_idx] - centers[ai], axis=1)
-        for aj_idx in np.argsort(dists)[1:16]:
-            aj = air_idx[aj_idx]
-            if ai < aj: pairs_to_match.append((ai, aj))
-    for ai in air_idx:
-        dists = np.linalg.norm(centers[gnd_idx] - centers[ai], axis=1)
-        for gj_idx in np.argsort(dists)[:5]:
-            pairs_to_match.append((ai, gnd_idx[gj_idx]))
-    pairs_to_match = list(set(pairs_to_match))
-    print(f"Pairs: {len(pairs_to_match)}")
+    from utils.pairs import generate_pairs
+    pairs_to_match = generate_pairs(img_names, ext_all)
 
     from lightglue.superpoint import SuperPoint as HLOC_SP
     from lightglue.models.matchers.lightglue import LightGlue as HLOC_LG
@@ -444,15 +425,12 @@ def main():
         d_vals = depth_sp[cams, uv_int[:, 1], uv_int[:, 0]]
         valid = d_vals > 0
         if valid.sum() < 2: continue
-        X_sum = np.zeros(3); C_sum = 0.0
-        for idx in range(M):
-            if not valid[idx]: continue
-            Ki = K_sp[cams[idx]]; Ri = ext_all[cams[idx],:3,:3]; ti = ext_all[cams[idx],:3,3]
-            Xk = unproject(uvs[idx], d_vals[idx], Ki, Ri, ti)
-            X_sum += c_vals[idx] * Xk; C_sum += c_vals[idx]
-        if C_sum > 0:
-            track_data[tid] = {'X': X_sum / C_sum, 'C': C_sum / M,
-                               'obs': [(cam, uv) for cam, uv in obs_list]}
+        best = int(np.argmax(c_vals * valid.astype(float)))
+        Ki = K_sp[cams[best]]; Ri = ext_all[cams[best],:3,:3]; ti = ext_all[cams[best],:3,3]
+        X = unproject(uvs[best], d_vals[best], Ki, Ri, ti)
+        C = c_vals[best]
+        track_data[tid] = {'X': X, 'C': C,
+                           'obs': [(cam, uv) for cam, uv in obs_list]}
     # Filter: remove points behind any camera
     track_data_filt = {}
     for tid, td in track_data.items():

@@ -425,12 +425,15 @@ def main():
         d_vals = depth_sp[cams, uv_int[:, 1], uv_int[:, 0]]
         valid = d_vals > 0
         if valid.sum() < 2: continue
-        best = int(np.argmax(c_vals * valid.astype(float)))
-        Ki = K_sp[cams[best]]; Ri = ext_all[cams[best],:3,:3]; ti = ext_all[cams[best],:3,3]
-        X = unproject(uvs[best], d_vals[best], Ki, Ri, ti)
-        C = c_vals[best]
-        track_data[tid] = {'X': X, 'C': C,
-                           'obs': [(cam, uv) for cam, uv in obs_list]}
+        X_sum = np.zeros(3); C_sum = 0.0
+        for idx in range(M):
+            if not valid[idx]: continue
+            Ki = K_sp[cams[idx]]; Ri = ext_all[cams[idx],:3,:3]; ti = ext_all[cams[idx],:3,3]
+            Xk = unproject(uvs[idx], d_vals[idx], Ki, Ri, ti)
+            X_sum += c_vals[idx] * Xk; C_sum += c_vals[idx]
+        if C_sum > 0:
+            track_data[tid] = {'X': X_sum / C_sum, 'C': C_sum / M,
+                               'obs': [(cam, uv) for cam, uv in obs_list]}
     # Filter: remove points behind any camera
     track_data_filt = {}
     for tid, td in track_data.items():

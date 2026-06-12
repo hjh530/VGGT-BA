@@ -50,13 +50,15 @@ def generate_pairs(image_names, extrinsics, mode='auto'):
             if ai < aj:
                 pairs.append((ai, aj))
 
-    # Air-ground: 5 nearest ground per air
+    # Air-ground: 10 nearest ground per air + 10 nearest air per ground, dedup
     for ai in air_idx:
-        if not gnd_idx:
-            break
         dists = np.linalg.norm(centers[gnd_idx] - centers[ai], axis=1)
-        for gj_idx in np.argsort(dists)[:5]:
+        for gj_idx in np.argsort(dists)[:10]:
             pairs.append((ai, gnd_idx[gj_idx]))
+    for gi in gnd_idx:
+        dists = np.linalg.norm(centers[air_idx] - centers[gi], axis=1)
+        for aj_idx in np.argsort(dists)[:10]:
+            pairs.append((air_idx[aj_idx], gi))
 
     pairs = list(set(pairs))
     n_air, n_gnd = len(air_idx), len(gnd_idx)
